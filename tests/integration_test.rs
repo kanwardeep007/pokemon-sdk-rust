@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use pokemon_api_sdk::pokemon_sdk::PokemonSdkBuilder;
 
 #[tokio::test]
@@ -6,6 +8,9 @@ async fn get_pokemon_detail_fetches_details_of_pokemon() {
     let id = 1;
     let new_pokemon_sdk = PokemonSdkBuilder::new()
         .expect("Unable to build Pokemon SDK")
+        .with_http_client(
+            pokemon_api_sdk::pokemon_sdk::get_default_client(Some(Duration::from_secs(3))).unwrap(),
+        )
         .build();
 
     // Act
@@ -26,6 +31,9 @@ async fn get_generation_detail_fetches_details_of_a_specific_pokemon_generation(
     let id = 1;
     let new_pokemon_sdk = PokemonSdkBuilder::new()
         .expect("Unable to build Pokemon SDK")
+        .with_http_client(
+            pokemon_api_sdk::pokemon_sdk::get_default_client(Some(Duration::from_secs(3))).unwrap(),
+        )
         .build();
 
     // Act

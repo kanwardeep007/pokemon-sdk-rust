@@ -27,15 +27,12 @@ impl PokemonSdk {
 pub struct PokemonSdkBuilder {
     http_client: reqwest::Client,
     retry_strategy: Option<RetryStrategy>,
-    timeout: Option<Duration>,
     server_url: Url,
 }
 
 impl PokemonSdkBuilder {
     pub fn new() -> Result<PokemonSdkBuilder, anyhow::Error> {
         let client = reqwest::Client::new();
-
-        let timeout = Duration::from_secs(3);
 
         let url = Url::from_str("https://pokeapi.co/api/v2/").map_err(|e| {
             anyhow!(
@@ -50,7 +47,6 @@ impl PokemonSdkBuilder {
             retry_strategy: Some(RetryStrategy::ExponentialBackoffTimed {
                 max_duration: backoff_retry_max_seconds,
             }),
-            timeout: Some(timeout),
             server_url: url,
         })
     }
@@ -65,10 +61,6 @@ impl PokemonSdkBuilder {
         self
     }
 
-    pub fn with_timeout(mut self, timeout: Duration) -> Self {
-        self.timeout = timeout.into();
-        self
-    }
     pub fn with_url(mut self, url: Url) -> Self {
         self.server_url = url;
         self
@@ -77,9 +69,7 @@ impl PokemonSdkBuilder {
     pub fn get_url(&self) -> &Url {
         &self.server_url
     }
-    pub fn get_timeout(&self) -> Option<Duration> {
-        self.timeout
-    }
+
     pub fn get_retry_strategy(&self) -> Option<&RetryStrategy> {
         self.retry_strategy.as_ref()
     }
@@ -112,4 +102,14 @@ impl PokemonSdkBuilder {
             games: GamesApi::new(inner),
         }
     }
+}
+
+pub fn get_default_client(timeout: Option<Duration>) -> Result<reqwest::Client, anyhow::Error> {
+    let mut client_builder = reqwest::ClientBuilder::new();
+    if let Some(duration) = timeout {
+        client_builder = client_builder.timeout(duration)
+    }
+    Ok(client_builder
+        .build()
+        .map_err(|e| anyhow!("Unable to generate client. Error: {}", e.to_string()))?)
 }
