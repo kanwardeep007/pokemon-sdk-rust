@@ -1,7 +1,4 @@
-use std::str::FromStr;
-
 use pokemon_api_sdk::pokemon_sdk::PokemonSdkBuilder;
-use url::Url;
 
 #[tokio::test]
 async fn get_pokemon_detail_fetches_details_of_pokemon() {
@@ -18,6 +15,7 @@ async fn get_pokemon_detail_fetches_details_of_pokemon() {
         .await;
 
     // Assert
+    dbg!(&pokemon_details);
     assert!(pokemon_details.is_ok());
     assert_eq!(pokemon_details.unwrap().id, 1);
 }

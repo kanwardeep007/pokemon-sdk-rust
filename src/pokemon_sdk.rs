@@ -1,10 +1,11 @@
 use crate::core_client::CoreHttpClient;
 use crate::games_api::api::GamesApi;
 use crate::pokemon_api::api::PokemonApi;
+use crate::retry_policy_mod::RetryStrategy;
 use anyhow::anyhow;
 use reqwest::Url;
 use reqwest_retry::policies::ExponentialBackoff;
-use reqwest_retry::RetryPolicy;
+use reqwest_retry::RetryTransientMiddleware;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
@@ -25,7 +26,7 @@ impl PokemonSdk {
 
 pub struct PokemonSdkBuilder {
     http_client: reqwest::Client,
-    retry_policy: Option<Box<dyn RetryPolicy>>,
+    retry_strategy: Option<RetryStrategy>,
     timeout: Option<Duration>,
     server_url: Url,
 }
@@ -33,10 +34,7 @@ pub struct PokemonSdkBuilder {
 impl PokemonSdkBuilder {
     pub fn new() -> Result<PokemonSdkBuilder, anyhow::Error> {
         let client = reqwest::Client::new();
-        let retry_policy = Some(
-            Box::new(ExponentialBackoff::builder().build_with_max_retries(3))
-                as Box<dyn RetryPolicy>,
-        );
+
         let timeout = Duration::from_secs(3);
 
         let url = Url::from_str("https://pokeapi.co/api/v2/").map_err(|e| {
@@ -45,9 +43,13 @@ impl PokemonSdkBuilder {
                 e.to_string()
             )
         })?;
+
+        let backoff_retry_max_seconds = Duration::from_secs(3);
         Ok(PokemonSdkBuilder {
             http_client: client,
-            retry_policy,
+            retry_strategy: Some(RetryStrategy::ExponentialBackoffTimed {
+                max_duration: backoff_retry_max_seconds,
+            }),
             timeout: Some(timeout),
             server_url: url,
         })
@@ -58,11 +60,8 @@ impl PokemonSdkBuilder {
         self
     }
 
-    pub fn with_retry_policy(
-        mut self,
-        retry_policy: impl Into<Option<Box<dyn RetryPolicy>>>,
-    ) -> Self {
-        self.retry_policy = retry_policy.into();
+    pub fn with_retry_policy(mut self, retry_policy: RetryStrategy) -> Self {
+        self.retry_strategy = Some(retry_policy);
         self
     }
 
@@ -75,11 +74,36 @@ impl PokemonSdkBuilder {
         self
     }
 
+    pub fn get_url(&self) -> &Url {
+        &self.server_url
+    }
+    pub fn get_timeout(&self) -> Option<Duration> {
+        self.timeout
+    }
+    pub fn get_retry_strategy(&self) -> Option<&RetryStrategy> {
+        self.retry_strategy.as_ref()
+    }
+    pub fn get_client(&self) -> &reqwest::Client {
+        &self.http_client
+    }
+
     pub fn build(self) -> PokemonSdk {
-        let client_with_middleware =
-            reqwest_middleware::ClientBuilder::new(self.http_client).build();
+        let mut client_with_middleware = reqwest_middleware::ClientBuilder::new(self.http_client);
+
+        if let Some(inner_retry_policy) = self.retry_strategy {
+            match inner_retry_policy {
+                RetryStrategy::ExponentialBackoffTimed { max_duration } => {
+                    let retry_policy =
+                        ExponentialBackoff::builder().build_with_total_retry_duration(max_duration);
+                    let retry_middleware = RetryTransientMiddleware::new_with_policy(retry_policy);
+                    client_with_middleware = client_with_middleware.with(retry_middleware);
+                }
+            }
+        }
+
+        let built_client_with_middleware = client_with_middleware.build();
         let inner = Arc::new(CoreHttpClient {
-            client: client_with_middleware,
+            client: built_client_with_middleware,
             url: self.server_url,
         });
 
