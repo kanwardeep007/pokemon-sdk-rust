@@ -1,3 +1,4 @@
+use crate::api_error::Error;
 use crate::core_client::CoreHttpClient;
 use crate::pokemon_api::model::Pokemon;
 use std::sync::Arc;
@@ -11,24 +12,11 @@ impl PokemonApi {
         Self { inner }
     }
 
-    pub async fn pokemon_details(&self, identifier: String) -> Pokemon {
-        let full_url = self
-            .inner
-            .url
-            .join(&format!("pokemon/{}", identifier))
-            .unwrap();
+    pub async fn pokemon_details(&self, identifier: String) -> Result<Pokemon, Error> {
+        let full_url = self.inner.url.join(&format!("pokemon/{}", identifier))?;
 
-        let response: Pokemon = self
-            .inner
-            .client
-            .get(full_url)
-            .send()
-            .await
-            .unwrap()
-            .json()
-            .await
-            .unwrap();
+        let response: Pokemon = self.inner.client.get(full_url).send().await?.json().await?;
 
-        return response;
+        return Ok(response);
     }
 }

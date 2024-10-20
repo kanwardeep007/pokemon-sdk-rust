@@ -683,12 +683,15 @@ checksum = "953ec861398dccce10c670dfeaf3ec4911ca479e9c02154b3a215178c5f566f2"
 name = "pokemon-api-sdk"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "reqwest",
  "reqwest-middleware",
  "reqwest-retry",
  "serde",
  "serde_json",
+ "thiserror",
  "tokio",
+ "url",
 ]
 
 [[package]]

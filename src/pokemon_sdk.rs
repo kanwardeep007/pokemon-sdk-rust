@@ -1,13 +1,13 @@
 use crate::core_client::CoreHttpClient;
 use crate::games_api::api::GamesApi;
 use crate::pokemon_api::api::PokemonApi;
-use std::str::FromStr;
-use std::sync::Arc;
-use std::time::Duration;
-
+use anyhow::anyhow;
 use reqwest::Url;
 use reqwest_retry::policies::ExponentialBackoff;
 use reqwest_retry::RetryPolicy;
+use std::str::FromStr;
+use std::sync::Arc;
+use std::time::Duration;
 
 pub struct PokemonSdk {
     pokemon: PokemonApi,
@@ -31,7 +31,7 @@ pub struct PokemonSdkBuilder {
 }
 
 impl PokemonSdkBuilder {
-    pub fn new() -> PokemonSdkBuilder {
+    pub fn new() -> Result<PokemonSdkBuilder, anyhow::Error> {
         let client = reqwest::Client::new();
         let retry_policy = Some(
             Box::new(ExponentialBackoff::builder().build_with_max_retries(3))
@@ -39,13 +39,18 @@ impl PokemonSdkBuilder {
         );
         let timeout = Duration::from_secs(3);
 
-        let url = Url::from_str("https://pokeapi.co/api/v2/").expect("Base url not a valid url");
-        PokemonSdkBuilder {
+        let url = Url::from_str("https://pokeapi.co/api/v2/").map_err(|e| {
+            anyhow!(
+                "Unable to generate URL from Server Url. Error: {} ",
+                e.to_string()
+            )
+        })?;
+        Ok(PokemonSdkBuilder {
             http_client: client,
             retry_policy,
             timeout: Some(timeout),
             server_url: url,
-        }
+        })
     }
 
     pub fn with_http_client(mut self, http_client: reqwest::Client) -> PokemonSdkBuilder {
@@ -63,6 +68,10 @@ impl PokemonSdkBuilder {
 
     pub fn with_timeout(mut self, timeout: Duration) -> Self {
         self.timeout = timeout.into();
+        self
+    }
+    pub fn with_url(mut self, url: Url) -> Self {
+        self.server_url = url;
         self
     }
 
