@@ -15,7 +15,9 @@ impl PokemonApi {
     pub async fn pokemon_details(&self, identifier: String) -> Result<Pokemon, Error> {
         let full_url = self.inner.url.join(&format!("pokemon/{}", identifier))?;
 
-        let response: Pokemon = self.inner.client.get(full_url).send().await?.json().await?;
+        let server_response = self.inner.client.get(full_url).send().await?;
+        dbg!(&server_response.status());
+        let response: Pokemon = server_response.json().await?;
 
         return Ok(response);
     }
