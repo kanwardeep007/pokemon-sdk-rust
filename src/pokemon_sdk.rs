@@ -74,6 +74,19 @@ impl PokemonSdkBuilder {
         self
     }
 
+    pub fn get_url(&self) -> &Url {
+        &self.server_url
+    }
+    pub fn get_timeout(&self) -> Option<Duration> {
+        self.timeout
+    }
+    pub fn get_retry_strategy(&self) -> Option<&RetryStrategy> {
+        self.retry_strategy.as_ref()
+    }
+    pub fn get_client(&self) -> &reqwest::Client {
+        &self.http_client
+    }
+
     pub fn build(self) -> PokemonSdk {
         let mut client_with_middleware = reqwest_middleware::ClientBuilder::new(self.http_client);
 
@@ -88,9 +101,9 @@ impl PokemonSdkBuilder {
             }
         }
 
-        let build_client_with_middleware = client_with_middleware.build();
+        let built_client_with_middleware = client_with_middleware.build();
         let inner = Arc::new(CoreHttpClient {
-            client: build_client_with_middleware,
+            client: built_client_with_middleware,
             url: self.server_url,
         });
 
