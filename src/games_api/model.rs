@@ -26,3 +26,8 @@ pub struct PokemonAbility {
     pub slot: i32,
     pub ability: String,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+}

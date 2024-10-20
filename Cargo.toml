@@ -14,3 +14,4 @@ reqwest-retry = { version = "0.6" }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros"] }
+wiremock = "0.5"
