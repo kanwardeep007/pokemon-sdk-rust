@@ -2,16 +2,23 @@ use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
 pub struct Pokemon {
-    id: i32,
-    name: String,
-    base_experience: i32,
-    height: i32,
-    weight: i32,
+    pub id: i32,
+    pub name: String,
+    pub base_experience: i32,
+    pub height: i32,
+    pub weight: i32,
+    pub abilities: Vec<PokemonAbility>,
 }
 
 #[derive(Deserialize, Debug)]
-struct PokemonAbility {
-    is_hidden: bool,
-    slot: i32,
-    ability: String,
+pub struct PokemonAbility {
+    pub is_hidden: bool,
+    pub slot: i32,
+    pub ability: AbilityDetails,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct AbilityDetails {
+    pub name: String,
+    pub url: String,
 }

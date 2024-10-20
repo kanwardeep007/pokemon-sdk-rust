@@ -1,4 +1,4 @@
-mod client;
+mod core_client;
 mod games_api;
 mod pokemon_api;
-mod pokemon_sdk;
+pub mod pokemon_sdk;
